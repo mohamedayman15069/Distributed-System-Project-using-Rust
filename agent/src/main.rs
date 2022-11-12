@@ -13,7 +13,7 @@ fn main() {
         let mut buf = [0;3];
         let (number_of_bytes, client_address) = socket_internal.recv_from(&mut buf)
                                                 .expect("Didn't receive data");
-        thread::spawn(move || {
+        // thread::spawn(move || {
             let client_port_num = client_address.port();
             let mut buf_agent = [0;5];
             for j in 0..3 {
@@ -23,10 +23,11 @@ fn main() {
             buf_agent[3] = (client_port_num>>8) as u8;  //MSB
             // socket_external.send_to(&buf_agent, listener_addresses[i%3].to_string()).expect("couldn't send data");
             println!("i: {}",i);
-            println!("Arr: {:?}",filled_buf);
+            println!("Arr: {:?}",buf_agent);
+            println!("Arr: {:?}",((buf_agent[3] as u16) << 8) | (buf_agent[4] as u16));
             i += 1;
             i %= 3;
-        });
+        // });
         
     }
 }
