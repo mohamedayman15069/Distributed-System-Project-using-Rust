@@ -3,13 +3,13 @@ fn main() {
 
 	let socket = UdpSocket::bind("127.0.0.1:4243").expect("couldn't bind to address");
     
-    let mut buf = [0;3];
+    let mut buf = [0;5];
 	loop{
 		let (number_of_bytes, src_addr) = socket.recv_from(&mut buf)
                                             .expect("Didn't receive data");
 
         // define a string that is the same length as the received data
-        let filled_buf = &mut buf[..number_of_bytes];
+        let filled_buf = &mut buf[..3];
         // print the received string
         println!("Arr: {:?}",filled_buf);
         // reverse the string
@@ -17,7 +17,7 @@ fn main() {
         // print the reversed string
         println!("Arr: {:?}",filled_buf);
         // send the reversed string back to the sender
-        socket.send_to(& filled_buf, src_addr).expect("couldn't send data");
+        socket.send_to(& buf, src_addr).expect("couldn't send data");
     }
 }
                                             
