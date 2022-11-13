@@ -16,14 +16,14 @@ let mut threads = Vec::new();
 
 // Creating a child fork
 match unsafe{fork()} {
-    Ok(ForkResult::Parent { child, .. }) => {
+    Ok(ForkResult::Parent { child, .. }) => { // normal code 
         // Parent process
         println!("Parent process: {}", child);
         // Wait for child process to finish
         let child_pid = waitpid(child, None).unwrap();
         println!("Child process {:?} finished", child_pid);
     }
-    Ok(ForkResult::Child) => {
+    Ok(ForkResult::Child) => { // agent
         // Child process
         println!("Child process");
         // Create a thread for each listener
