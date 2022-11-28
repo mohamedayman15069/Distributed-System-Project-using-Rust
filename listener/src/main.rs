@@ -20,7 +20,7 @@ fn get_cpu_util() -> i32{
 	avg/=count;
 	return avg;
 }
-
+#[derive(Clone)]
 struct Election{
 	ELECTION:[String;2],
 	RESULT:String,
@@ -31,7 +31,7 @@ struct Election{
 
 fn main() {
 
-	let mut socket = UdpSocket::bind("127.0.0.1:4245").expect("couldn't bind to address");
+	let mut socket = UdpSocket::bind("127.0.0.1:4243").expect("couldn't bind to address");
     let mut agents: Vec<String> = Vec::new();
 
 	let SERVER_ADDRESSES:[&str;2] = ["127.0.0.1:4243","127.0.0.1:4244"];
@@ -44,12 +44,14 @@ fn main() {
 						  SERVER_DOWN:SERVER_DOWN,
 						  MY_ADDRESS:MY_ADDRESS,
 						  SERVER_ADDRESSES:SERVER_ADDRESSES};
-
 	let timer = Timer::new();
 	let (tx, rx) = channel();
-	
+	// pass in schedule_repeating a closure that takes a mutable reference to field
+	// sechedule a task to run every 5 seconds
+	let tx  = tx.clone(); 
+	//socket = socket.try_clone();
 	let handle = timer.schedule_repeating(chrono::Duration::milliseconds(5000), move || {
-	
+		
 		// sleep for one second 
 		println!("Timer fired!");
 		// start election
@@ -108,14 +110,23 @@ fn main() {
 				}
 			}
 		}
+
+		// Now, I will need to have a new variable of type Election
+		let mut new_field = Election{ELECTION: field.ELECTION.clone(),
+									RESULT: field.RESULT.clone(),
+									SERVER_DOWN: field.SERVER_DOWN.clone(),
+									MY_ADDRESS: field.MY_ADDRESS.clone(),
+									SERVER_ADDRESSES: field.SERVER_ADDRESSES.clone()};
+
 	
-	let _ignored = tx.send((field, socket)); // Avoid unwrapping here.
-		//return (field, socket)
+	let _ignored = tx.send((new_field, socket.try_clone())).unwrap(); // Avoid unwrapping here.
+
 	});
 
-	(field,socket) = rx.recv().unwrap();
+	//(field,socket) = rx.recv().unwrap();
+
 	loop{
-		
+		let (field,socket) = rx.recv().unwrap(); 
 
 	println!("This code has been executed after 3 seconds");
 	}
