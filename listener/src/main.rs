@@ -34,7 +34,12 @@ fn main() {
 
 	let timer = Timer::new();
 
-	let _timer_handle = timer.schedule_repeating(chrono::Duration::milliseconds(10000), move || {
+	// sechedule a task to run every 5 seconds 
+
+	loop{	
+		// Just do this loop for each 1 second using sleep ? 
+		// sleep for one second 
+		std::thread::sleep(std::time::Duration::from_secs(1));
 		println!("Timer fired!");
 		// start election
 		println!("start election fn");
@@ -92,8 +97,6 @@ fn main() {
 				}
 			}
 		}
-
-
 
 	loop {
 		let mut buf = [0; 25];
@@ -176,6 +179,7 @@ fn main() {
 
 		println!("agents: {:?}", agents);
 	}
-});
+}
+// });
 	
 }
