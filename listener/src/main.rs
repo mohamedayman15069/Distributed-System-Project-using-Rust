@@ -101,6 +101,7 @@ fn main() {
 
 	// socket = UdpSocket::bind("127.0.0.1:4242").expect("couldn't bind to address");
 	let mut socket = UdpSocket::bind("127.0.0.1:4242").expect("couldn't bind to address");
+	// let SERVER_ADDRESSES = vec!["127.0.0.1:4243","127.0.0.1:4244"];
     // let mut buf = [0;3];
     let mut agents: Vec<String> = Vec::new();
 
