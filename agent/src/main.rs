@@ -11,8 +11,15 @@ fn main() {
     //will change to external IP later
     let socket_external = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
     let active = [1;3];
+    let listener_addresses = ["127.0.0.1:4242", "127.0.0.1:4243", "127.0.0.1:4244"];
+    let mut address_to_idx = HashMap::new();
+    for i in 0..3 {
+        address_to_idx.insert(listener_addresses[i as usize], i);
+    }
+    let (mut reader, mut writer) = os_pipe::pipe().unwrap();
     match unsafe{fork()} {
         Ok(ForkResult::Parent { child, .. }) => {
+            drop(writer);
             
 
             let mut outbound_requests: Queue<[u8;5]> = queue![];
@@ -20,7 +27,7 @@ fn main() {
             let user_original = Arc::new(Mutex::new(outbound_requests));
             
             
-            let listener_addresses = ["127.0.0.1:4242", "127.0.0.1:4243", "127.0.0.1:4244"];
+            
             let mut i=0;
             let user1 = user_original.clone();
             thread::spawn(move || {
@@ -40,6 +47,14 @@ fn main() {
                         drop(locked_user);
                         thread::sleep(time::Duration::from_millis(10));
                     }
+                }
+            });
+            
+            thread::spawn(move || {
+                loop{
+                    let mut buf = [0;2];   //////
+                    reader.read(&mut buf).unwrap();
+                    active[buf[0] as idx] = buf[1];
                 }
             });
 
@@ -62,16 +77,11 @@ fn main() {
                     buf_agent[3] = (client_port_num>>8) as u8;  //MSB
                     let mut locked_user = user.lock().unwrap();
                     locked_user.add(buf_agent);
-                    // socket_clone.send_to(&buf_agent, listener_addresses[i%3].to_string()).expect("couldn't send data");
-                    // println!("i: {}",i);
-                    // println!("Arr: {:?}",buf_agent);
-                    // println!("Port: {:?}",((buf_agent[3] as u16) << 8) | (buf_agent[4] as u16));
-                    // i += 1;
-                    // i %= 3;
                 });
             }
         }
         Ok(ForkResult::Child) => {
+            drop(reader);
             let mut inbound_replies: Queue<[u8;5]> = queue![];
             
             let user_original = Arc::new(Mutex::new(inbound_replies));
@@ -81,13 +91,25 @@ fn main() {
                 loop{
                     let (number_of_bytes, _) = socket_external.recv_from(&mut buf_agent_reply)
                                                 .expect("Didn't receive data");
-                    let mut locked_user = user1.lock().unwrap();
-                    println!("{:?}", buf_agent_reply);
+                    if(<identify status message>){
+                        /////extract address and status
+                        //let mut server_address = 
+                        //let mut stat = 
+                        let mut idx = address_to_idx[server_address];
+                        let mut buf = [0;2];
+                        buf[0] = idx;
+                        buf[1] = stat;
+                        writer.write(&mut buf).unwrap();
+                    }
+                    else{
+                        let mut locked_user = user1.lock().unwrap();
+                        println!("{:?}", buf_agent_reply);
 
 
-                    locked_user.add(buf_agent_reply);
-                    println!("{:?}", locked_user.size());
-                    drop(locked_user);
+                        locked_user.add(buf_agent_reply);
+                        println!("{:?}", locked_user.size());
+                        drop(locked_user);
+                    }
                 }
             });
             let socket_internal = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
