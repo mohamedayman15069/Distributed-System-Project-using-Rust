@@ -6,11 +6,13 @@ use std::net::Ipv4Addr;
 use nix::unistd::{fork, ForkResult};
 use queues::*;
 use std::sync::{Arc, Mutex};
+use std::io::prelude::*;
+use std::collections::HashMap;
 
 fn main() {
     //will change to external IP later
     let socket_external = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
-    let active = [1;3];
+    let mut active = [1;3];
     let listener_addresses = ["127.0.0.1:4242", "127.0.0.1:4243", "127.0.0.1:4244"];
     let mut address_to_idx = HashMap::new();
     for i in 0..3 {
@@ -38,9 +40,12 @@ fn main() {
                         let temp: [u8;5] = locked_user.peek().unwrap();
                         locked_user.remove();
                         drop(locked_user);
+                        while(active[i] == 0)
+                        {
+                            i += 1;
+                            i %= 3;
+                        }
                         socket_external.send_to(&temp, listener_addresses[i]).expect("couldn't send data");
-                        i += 1;
-                        i %= 3;
                     }
                     else
                     {
@@ -54,7 +59,7 @@ fn main() {
                 loop{
                     let mut buf = [0;2];   //////
                     reader.read(&mut buf).unwrap();
-                    active[buf[0] as idx] = buf[1];
+                    active[buf[0] as usize] = buf[1];
                 }
             });
 
@@ -89,17 +94,27 @@ fn main() {
             thread::spawn(move || {
                 let mut buf_agent_reply = [0;5];
                 loop{
-                    let (number_of_bytes, _) = socket_external.recv_from(&mut buf_agent_reply)
+                    let (number_of_bytes, server_address) = socket_external.recv_from(&mut buf_agent_reply)
                                                 .expect("Didn't receive data");
-                    if(<identify status message>){
-                        /////extract address and status
-                        //let mut server_address = 
-                        //let mut stat = 
-                        let mut idx = address_to_idx[server_address];
-                        let mut buf = [0;2];
-                        buf[0] = idx;
-                        buf[1] = stat;
-                        writer.write(&mut buf).unwrap();
+                    if number_of_bytes==1 {
+                        let mut stat = 0;
+                        if buf_agent_reply[0] =='d' as u8 || buf_agent_reply[0]=='u' as u8
+                        {
+                            if buf_agent_reply[0]=='d' as u8
+                            {
+                                stat = 0;
+                            }
+                            else if buf_agent_reply[0]=='u' as u8
+                            {    
+                                stat = 1;
+                            }
+                            
+                            let mut idx = address_to_idx[&server_address.to_string().as_str()];
+                            let mut buf = [0;2];
+                            buf[0] = idx;
+                            buf[1] = stat;
+                            writer.write(&mut buf).unwrap();
+                        }
                     }
                     else{
                         let mut locked_user = user1.lock().unwrap();
