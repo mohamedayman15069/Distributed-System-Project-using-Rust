@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>>{
 	let timer = Timer::new();
 	let timer2 = Timer::new();
     let mut active = [1;2];
-	let mut no_requests: u32 = 0;
+	let mut no_requests: u128 = 0;
 	let mut server_up = 1;
 	let mut im_considered = 0;
 	
