@@ -9,7 +9,7 @@ fn main() {
         let received1 = received.clone();
         thread::spawn(move || {
             let mut local_ctr = 0;
-            for i in 0..100{
+            for i in 0..1000{
                 let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
                 //socket.set_read_timeout(Some(std::time::Duration::from_millis(3000))).expect("set_read_timeout call failed");
                 socket.send_to(&[1,2,3], "127.0.0.1:4245").expect("couldn't send data");

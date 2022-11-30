@@ -5,17 +5,19 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use std::thread::sleep;
+use rand::{Rng, SeedableRng, rngs::StdRng};
+use std::time::SystemTime;
 
 
-fn get_cpu_util() -> i32{
+fn get_cpu_util(_avg: i32) -> i32{
 	let mut sys = System::new();
     sys.refresh_cpu(); // Refreshing CPU information.
-	let mut avg = 200;
+	let mut avg = _avg;
 	let mut count = 0;
 	for cpu in sys.cpus() {
 		avg += cpu.cpu_usage() as i32;
 		count+=1;
-		print!("{}% ", cpu.cpu_usage());
+		//print!("{}% ", cpu.cpu_usage());
 	}
 	println!("");
 
@@ -48,10 +50,17 @@ fn main() {
 						  MY_ADDRESS:MY_ADDRESS,
 						  SERVER_ADDRESSES:SERVER_ADDRESSES};
 	let timer = Timer::new();
+	// let d = SystemTime::now()
+    // .duration_since(SystemTime::UNIX_EPOCH)
+    // .expect("Duration since UNIX_EPOCH failed");
+	let mut rng = StdRng::seed_from_u64(29);
+    let count = 1000000+7;
+	let mut _avg = rng.gen::<i32>()%(count);
 	// pass in schedule_repeating a closure that takes a mutable reference to field
 	// sechedule a task to run every 5 seconds
 	let user_original = Arc::new(Mutex::new(field));
 	let user1 = user_original.clone();
+
 	let handle = timer.schedule_repeating(chrono::Duration::milliseconds(10000), move || {
 		
 		// sleep for one second 
@@ -59,7 +68,8 @@ fn main() {
 		// start election
 		// println!("start election fn");
 		//get cpu utilization
-		let avg = get_cpu_util();
+
+		let avg = get_cpu_util(_avg);
 
 		// check that no election was already started by another server
 		// println!("check that no election was already started by another server");
@@ -95,11 +105,10 @@ fn main() {
 		//dont reply
 		//if flag 1
 		//reply 
-		println!("server_up: {:?}", server_up);
+
 		if server_up == 0{
 			continue;
 		}
-		
 
 		// while server_up==0
 	 	// {
@@ -134,14 +143,14 @@ fn main() {
 						}
 						server_up = 0;
 						sleep(Duration::from_secs(3));
+						_avg = rng.gen_range(0.. 10000);
 						server_up = 1;
 						println!("IM BACK UP!");
 						for agent in &agents{
 							let up = "u";//+ &locked_user.SERVER_DOWN;
 							let b_up = up.as_bytes();
 							socket_.send_to(&b_up, agent).expect("couldn't send data");
-						}
-											
+						}					
 					}
 					println!("{}",locked_user.SERVER_DOWN.to_owned() + " IS DOWN!");
 				
@@ -161,7 +170,7 @@ fn main() {
 	 				locked_user.ELECTION[1] = msg;
 				}
 				
-				let avg = get_cpu_util();
+				let avg = get_cpu_util(_avg);
 				let mut s1:i32 = -1; let mut s2:i32 = -1;
 				if locked_user.ELECTION[0] !=""
 				{
@@ -309,6 +318,7 @@ fn main() {
 						}
 						server_up = 0;
 						sleep(Duration::from_secs(3));
+						_avg = rng.gen_range(0..10000);
 						server_up = 1;
 						println!("IM BACK UP!");
 						for agent in &agents{
