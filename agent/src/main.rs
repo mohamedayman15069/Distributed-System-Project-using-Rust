@@ -24,6 +24,7 @@ fn main()  -> Result<(), Box<dyn Error>>{
     //will change to external IP later
     let socket_external = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
     let mut active = [1;3];
+    let user_original_active = Arc::new(Mutex::new(active));
     let listener_addresses = ["127.0.0.1:4242", "127.0.0.1:4243", "127.0.0.1:4244"];
     let mut address_to_idx = HashMap::new();
     
@@ -49,6 +50,7 @@ fn main()  -> Result<(), Box<dyn Error>>{
             let mut i=0;
             let user1 = user_original.clone();
             let user1_req_p_server = user_original_req_p_server.clone();
+            let user1_active = user_original_active.clone();
             thread::spawn(move || {
                 loop{
                     let mut locked_user = user1.lock().unwrap();
@@ -58,11 +60,14 @@ fn main()  -> Result<(), Box<dyn Error>>{
                         locked_user.remove();
                         drop(locked_user);
                         // println!("Active2: {:?}", active);
-                        while active[i] == 0
+                        
+                        let mut locked_user_active = user1_active.lock().unwrap();
+                        while locked_user_active[i] == 0
                         {
                             i += 1;
                             i %= 3;
                         }
+                        drop(locked_user_active);
                         // println!("i: {}", i);
                         let mut locked_user_req_p_server = user1_req_p_server.lock().unwrap();
                         locked_user_req_p_server[i] += 1;
@@ -97,13 +102,16 @@ fn main()  -> Result<(), Box<dyn Error>>{
                 println!("req_per_server: {:?}", locked_user_req_p_server);
                 drop(locked_user_req_p_server);
             });
-            
+            let user2_active = user_original_active.clone();
             thread::spawn(move || {
                 loop{
                     let mut buf = [0;2];   //////
                     reader.read(&mut buf).unwrap();
-                    active[buf[0] as usize] = buf[1];
-                    println!("Active: {:?}", active);
+                    
+                    let mut locked_user_active = user2_active.lock().unwrap();
+                    locked_user_active[buf[0] as usize] = buf[1];
+                    println!("Active: {:?}", locked_user_active);
+                    drop(locked_user_active);
                 }
             });
 
