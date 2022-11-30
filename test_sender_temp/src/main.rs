@@ -34,9 +34,9 @@ fn main()  -> Result<(), Box<dyn Error>>{
             let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
             let mut local_ctr = 0;
             let mut thread_data_local = thread_data{sum_response_time: 0, number_of_received_responses: 0};
-            for i in 0..100{
+            for i in 0..1000{
                 let start = get_epoch_ms();
-                //socket.set_read_timeout(Some(std::time::Duration::from_millis(3000))).expect("set_read_timeout call failed");
+                socket.set_read_timeout(Some(std::time::Duration::from_millis(3000))).expect("set_read_timeout call failed");
                 socket.send_to(&[1,2,3], "127.0.0.1:4245").expect("couldn't send data");
                 // println!("port: {}",socket.local_addr().unwrap().port());
                 let mut buf = [0;3];
@@ -45,10 +45,10 @@ fn main()  -> Result<(), Box<dyn Error>>{
                 match socket.recv_from(&mut buf){
                     Ok((number_of_bytes, client_address)) => {
                         //println!("received: {:?}", buf);
-                        thread_data_local.sum_response_time += 1;
+                        thread_data_local.number_of_received_responses += 1;
                         let end = get_epoch_ms();
                         let response_time = end-start;
-                        thread_data_local.number_of_received_responses += response_time as u32;
+                        thread_data_local.sum_response_time += response_time as u32;
                     },
                     Err(e) => {
                         //println!("error: {:?}", e);
@@ -64,7 +64,9 @@ fn main()  -> Result<(), Box<dyn Error>>{
 
             let mut locked_user = finished_threads1.lock().unwrap();
             *locked_user += 1;
+            println!("finished threads: {}", *locked_user);
             drop(locked_user);
+            
             
             // println!("Arr: {:?}", buf);
         });

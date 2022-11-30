@@ -8,7 +8,7 @@ use queues::*;
 use std::sync::{Arc, Mutex};
 use std::io::prelude::*;
 use std::collections::HashMap;
-
+use timer::Timer;
 fn main() {
     //will change to external IP later
     let socket_external = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
@@ -23,6 +23,10 @@ fn main() {
         Ok(ForkResult::Parent { child, .. }) => {
             drop(writer);
             
+            let mut req_per_server: [u32;3] = [0;3];
+            let user_original_req_p_server = Arc::new(Mutex::new(req_per_server));
+
+            
 
             let mut outbound_requests: Queue<[u8;5]> = queue![];
             
@@ -32,6 +36,7 @@ fn main() {
             
             let mut i=0;
             let user1 = user_original.clone();
+            let user1_req_p_server = user_original_req_p_server.clone();
             thread::spawn(move || {
                 loop{
                     let mut locked_user = user1.lock().unwrap();
@@ -40,13 +45,16 @@ fn main() {
                         let temp: [u8;5] = locked_user.peek().unwrap();
                         locked_user.remove();
                         drop(locked_user);
-                        println!("Active2: {:?}", active);
-                        while(active[i] == 0)
+                        // println!("Active2: {:?}", active);
+                        while active[i] == 0
                         {
                             i += 1;
                             i %= 3;
                         }
-                        println!("i: {}", i);
+                        // println!("i: {}", i);
+                        let mut locked_user_req_p_server = user1_req_p_server.lock().unwrap();
+                        locked_user_req_p_server[i] += 1;
+                        drop(locked_user_req_p_server);
                         socket_external.send_to(&temp, listener_addresses[i]).expect("couldn't send data");
                         i += 1;
                         i %= 3;
@@ -57,6 +65,13 @@ fn main() {
                         thread::sleep(time::Duration::from_millis(10));
                     }
                 }
+            });
+            let user2_req_p_server = user_original_req_p_server.clone();
+            let timer = Timer::new();
+            let handle = timer.schedule_repeating(chrono::Duration::milliseconds(10000), move || {
+                let mut locked_user_req_p_server = user2_req_p_server.lock().unwrap();
+                println!("req_per_server: {:?}", locked_user_req_p_server);
+                drop(locked_user_req_p_server);
             });
             
             thread::spawn(move || {
@@ -102,7 +117,7 @@ fn main() {
                     let (number_of_bytes, server_address) = socket_external.recv_from(&mut buf_agent_reply)
                                                 .expect("Didn't receive data");
                     
-                    println!("no of bytes: {:?}", number_of_bytes);
+                    // println!("no of bytes: {:?}", number_of_bytes);
                     if number_of_bytes==1 {
                         let mut stat = 0;
                         if buf_agent_reply[0] =='d' as u8 || buf_agent_reply[0]=='u' as u8
@@ -115,7 +130,7 @@ fn main() {
                             {    
                                 stat = 1;
                             }
-                            
+                            println!("server: {:?}, stat: {:?}", server_address, stat);
                             let mut idx = address_to_idx[&server_address.to_string().as_str()];
                             let mut buf = [0;2];
                             buf[0] = idx;
@@ -125,7 +140,7 @@ fn main() {
                     }
                     else{
                         let mut locked_user = user1.lock().unwrap();
-                        println!("{:?}", buf_agent_reply);
+                        // println!("{:?}", buf_agent_reply);
 
 
                         locked_user.add(buf_agent_reply);
@@ -147,12 +162,12 @@ fn main() {
                     drop(locked_user);
                     let client_port: u16 = ((buf_agent_reply[3] as u16) << 8) | (buf_agent_reply[4] as u16);
                     let socket_address_client_reply = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), client_port);
-                    println!("hi{:?}", client_port);
+                    // println!("hi{:?}", client_port);
                     let mut buf = [0;3];
                     for j in 0..3 {
                         buf[j]=buf_agent_reply[j];
                     }
-                    println!("Arr: {:?}", buf);
+                    // println!("Arr: {:?}", buf);
 
                     socket_internal.send_to(&buf, socket_address_client_reply).expect("couldn't send data");
                 }
