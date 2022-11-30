@@ -22,7 +22,7 @@ struct request_distribution{
 
 fn main()  -> Result<(), Box<dyn Error>>{
     // Socket that commuincates with servers
-    let socket_external = UdpSocket::bind("10.7.57.128:0").expect("couldn't bind to address");
+    let socket_external = UdpSocket::bind("10.7.57.94:0").expect("couldn't bind to address");
     // Active status for servers (0: down, 1: up)
     let mut active = [1;3];
     let active_mutex = Arc::new(Mutex::new(active));
