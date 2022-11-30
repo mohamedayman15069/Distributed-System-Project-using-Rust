@@ -9,12 +9,24 @@ use std::sync::{Arc, Mutex};
 use std::io::prelude::*;
 use std::collections::HashMap;
 use timer::Timer;
-fn main() {
+use csv::Writer;
+use serde::Serialize;
+use std::error::Error;
+
+#[derive(Serialize)]
+struct request_distribution{
+    server_0: u32,
+    server_1: u32,
+    server_2: u32,
+}
+
+fn main()  -> Result<(), Box<dyn Error>>{
     //will change to external IP later
     let socket_external = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
     let mut active = [1;3];
     let listener_addresses = ["127.0.0.1:4242", "127.0.0.1:4243", "127.0.0.1:4244"];
     let mut address_to_idx = HashMap::new();
+    
     for i in 0..3 {
         address_to_idx.insert(listener_addresses[i as usize], i);
     }
@@ -66,10 +78,22 @@ fn main() {
                     }
                 }
             });
+            let wtr = Arc::new(Mutex::new(Writer::from_path("request_distribution.csv")?));
+            let wtr1 = wtr.clone();
+            
             let user2_req_p_server = user_original_req_p_server.clone();
             let timer = Timer::new();
             let handle = timer.schedule_repeating(chrono::Duration::milliseconds(10000), move || {
                 let mut locked_user_req_p_server = user2_req_p_server.lock().unwrap();
+                let mut locked_wtr = wtr1.lock().unwrap();
+                let mut request_distribution_local = request_distribution{
+                    server_0: locked_user_req_p_server[0],
+                    server_1: locked_user_req_p_server[1],
+                    server_2: locked_user_req_p_server[2],
+                };
+                locked_wtr.serialize(request_distribution_local);
+                locked_wtr.flush();
+                drop(locked_wtr);
                 println!("req_per_server: {:?}", locked_user_req_p_server);
                 drop(locked_user_req_p_server);
             });
@@ -183,4 +207,5 @@ fn main() {
             println!("Error");
         }
     }
+    Ok(())
 }

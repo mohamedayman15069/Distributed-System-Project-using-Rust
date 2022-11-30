@@ -12,3 +12,5 @@ queues = "1.0.2"
 os_pipe = "1.1.2"
 timer = "0.2.0"
 chrono="0.4.23"
+csv = "1.1.6"
+serde = {version = "1.0.148", features = ["derive"]}

@@ -7,7 +7,8 @@ use std::time::Duration;
 use std::thread::sleep;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use std::time::SystemTime;
-
+use csv::Writer;
+use std::error::Error;
 
 #[derive(Clone)]
 struct Election{	
@@ -19,10 +20,10 @@ struct Election{
 	avg : i32
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>>{
 
 	let MY_ADDRESS:&str = "127.0.0.1:4244";
-	let random_seed = 41;
+	let random_seed = 43;
 	let election_ms = 60000;
 	let sleep_s = 15;
 	let mut socket_ = UdpSocket::bind(MY_ADDRESS).expect("couldn't bind to address");
@@ -54,7 +55,25 @@ fn main() {
 	// sechedule a task to run every 5 seconds
 	let user_original = Arc::new(Mutex::new(field));
 	let user1 = user_original.clone();
-		
+	
+	let mut no_requests: u32 = 0;
+	let user1_original_no_requests = Arc::new(Mutex::new(no_requests));
+
+	let wtr = Arc::new(Mutex::new(Writer::from_path("number_of_requests.csv")?));
+	let wtr1 = wtr.clone();
+	
+	let user1_no_requests = user1_original_no_requests.clone();
+	let timer2 = Timer::new();
+	let handle = timer2.schedule_repeating(chrono::Duration::milliseconds(10000), move || {
+		let mut locked_user_no_requests = user1_no_requests.lock().unwrap();
+		let mut locked_wtr = wtr1.lock().unwrap();
+		locked_wtr.serialize(*locked_user_no_requests);
+		locked_wtr.flush();
+		drop(locked_wtr);
+		println!("req_per_server: {:?}", locked_user_no_requests);
+		drop(locked_user_no_requests);
+	});
+
 	let handle = timer.schedule_repeating(chrono::Duration::milliseconds(election_ms), move || {
 		
 		// sleep for one second 
@@ -383,8 +402,6 @@ fn main() {
 						if s1 == s2 && locked_user.avg <= s1{
 							//send last
 							if src.to_string().as_str() == locked_user.SERVER_ADDRESSES[0]{
-								// println!("sending: {:?}", locked_user.ELECTION[0]);
-								// socket_.send_to(&locked_user.ELECTION[0].as_bytes(), locked_user.SERVER_ADDRESSES[1]).expect("couldn't send data");
 								socket_.send_to(&locked_user.ELECTION[0].as_bytes(), dest).expect("couldn't send data");
 							}
 							else{
@@ -601,6 +618,10 @@ fn main() {
 		}
 	 	//else: msg from agent
 	 	else{ 
+			let user2_no_requests = user1_original_no_requests.clone();
+			let mut locked_user = user2_no_requests.lock().unwrap();
+			*locked_user += 1;
+			drop(locked_user);
 			if !agents.contains(&src.to_string()) {
 
 	 			agents.push(src.to_string());	//collecting list of agents in the system
