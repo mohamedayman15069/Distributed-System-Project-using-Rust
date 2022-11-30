@@ -40,12 +40,16 @@ fn main() {
                         let temp: [u8;5] = locked_user.peek().unwrap();
                         locked_user.remove();
                         drop(locked_user);
+                        println!("Active2: {:?}", active);
                         while(active[i] == 0)
                         {
                             i += 1;
                             i %= 3;
                         }
+                        println!("i: {}", i);
                         socket_external.send_to(&temp, listener_addresses[i]).expect("couldn't send data");
+                        i += 1;
+                        i %= 3;
                     }
                     else
                     {
@@ -60,6 +64,7 @@ fn main() {
                     let mut buf = [0;2];   //////
                     reader.read(&mut buf).unwrap();
                     active[buf[0] as usize] = buf[1];
+                    println!("Active: {:?}", active);
                 }
             });
 
@@ -96,6 +101,8 @@ fn main() {
                 loop{
                     let (number_of_bytes, server_address) = socket_external.recv_from(&mut buf_agent_reply)
                                                 .expect("Didn't receive data");
+                    
+                    println!("no of bytes: {:?}", number_of_bytes);
                     if number_of_bytes==1 {
                         let mut stat = 0;
                         if buf_agent_reply[0] =='d' as u8 || buf_agent_reply[0]=='u' as u8
@@ -122,7 +129,6 @@ fn main() {
 
 
                         locked_user.add(buf_agent_reply);
-                        println!("{:?}", locked_user.size());
                         drop(locked_user);
                     }
                 }

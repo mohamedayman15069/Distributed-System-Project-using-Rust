@@ -2,12 +2,15 @@ use timer::Timer;
 use sysinfo::{CpuExt, System, SystemExt};
 use std::net::UdpSocket;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+use std::thread::sleep;
 
 
 fn get_cpu_util() -> i32{
 	let mut sys = System::new();
     sys.refresh_cpu(); // Refreshing CPU information.
-	let mut avg = 800;
+	let mut avg = 500;
 	let mut count = 0;
 	for cpu in sys.cpus() {
 		avg += cpu.cpu_usage() as i32;
@@ -34,7 +37,7 @@ fn main() {
 	let mut socket = socket_.try_clone().expect("couldn't clone socket");
     let mut agents: Vec<String> = Vec::new();
 
-	let SERVER_ADDRESSES:[&str;2] = ["127.0.0.1:4242","127.0.0.1:4244"];
+	let SERVER_ADDRESSES:[&str;2] = ["127.0.0.1:4244","127.0.0.1:4242"];
 	let MY_ADDRESS:&str = "127.0.0.1:4243";
 	let mut ELECTION:[String;2] = [String::new(),String::new()];
 	let mut RESULT:String = String::new();
@@ -77,24 +80,43 @@ fn main() {
 	});
 
 	let user2 = user_original.clone();
+	let mut server_up = 1;
 	loop {
+        println!("Agents: {:?}", agents);
 		//let socket_ = socket__;
 	 	let mut buf = [0; 30];
+		// let mut amt = 0;
+		// let mut src: std::net::SocketAddr = std::net::SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(0, 0, 0, 0)), 0);
 		
-	 	let (amt, src) = socket_.recv_from(&mut buf).expect("Didn't receive data");
 
+		let	(amt, src) = socket_.recv_from(&mut buf).expect("Didn't receive data");
+		
+		//if flag 0 
+		//dont reply
+		//if flag 1
+		//reply 
+        println!("server_up: {:?}", server_up);
+		if server_up == 0{
+			continue;
+		}
+
+		// while server_up==0
+	 	// {
+		// 	(amt, src) = socket_.recv_from(&mut buf).expect("Didn't receive data");
+		// }
+		// (amt, src) = socket_.recv_from(&mut buf).expect("Didn't receive data");
 	 	println!("\n{} bytes from {}", amt, src);
 	 	// println!("data: {:?}", buf);
 
 		// let msg = std::str::from_utf8(&buf).unwrap();
-	 	let mut msg = String::from_utf8((&buf).to_vec()).unwrap();
-		println!("msg: {}", msg);
+	 	
 
 		let mut locked_user = user2.lock().unwrap();
 
 	 	if locked_user.SERVER_ADDRESSES.contains(&src.to_string().as_str()) { //if msg from another server
-
-	 		if msg.split(',').nth(0).unwrap() == "r"{
+			let mut msg = String::from_utf8((&buf).to_vec()).unwrap();
+			println!("msg: {}", msg);
+			if msg.split(',').nth(0).unwrap() == "r"{
 				if msg.split(',').nth(1).unwrap().to_string() == locked_user.SERVER_DOWN{
 					//print election done
 					println!("ELECTION DONE");
@@ -105,10 +127,19 @@ fn main() {
 					if locked_user.SERVER_DOWN == locked_user.MY_ADDRESS{
 						println!("IM GOING DOWN!");
 						for agent in &agents{
-							let down = "d,".to_owned()+ &locked_user.SERVER_DOWN;
+							let down = "d";//.to_owned()+ &locked_user.SERVER_DOWN;
 							let b_down = down.as_bytes();
 							socket_.send_to(&b_down, agent).expect("couldn't send data");
-						}				
+						}
+						server_up = 0;
+						sleep(Duration::from_secs(3));
+						server_up = 1;
+						println!("IM BACK UP!");
+						for agent in &agents{
+							let up = "u";//+ &locked_user.SERVER_DOWN;
+							let b_up = up.as_bytes();
+							socket_.send_to(&b_up, agent).expect("couldn't send data");
+						}					
 					}
 					println!("{}",locked_user.SERVER_DOWN.to_owned() + " IS DOWN!");
 				
@@ -243,7 +274,6 @@ fn main() {
 						// 	socket_.send_to(&el.as_bytes(), addr).expect("couldn't send data");
 						// }
 						socket_.send_to(&el.as_bytes(), SERVER_ADDRESSES[0]).expect("couldn't send data");
-
 					}
 					else{
 						//avg won
@@ -271,10 +301,19 @@ fn main() {
 					if locked_user.SERVER_DOWN == locked_user.MY_ADDRESS{
 						println!("IM GOING DOWN!");
 						for agent in &agents{
-							let down = "d,".to_owned()+ &locked_user.SERVER_DOWN;
+							let down = "d";//+ &locked_user.SERVER_DOWN;
 							let b_down = down.as_bytes();
 							socket_.send_to(&b_down, agent).expect("couldn't send data");
-						}				
+						}
+						server_up = 0;
+						sleep(Duration::from_secs(3));
+						server_up = 1;
+						println!("IM BACK UP!");
+						for agent in &agents{
+							let up = "u";//+ &locked_user.SERVER_DOWN;
+							let b_up = up.as_bytes();
+							socket_.send_to(&b_up, agent).expect("couldn't send data");
+						}					
 					}
 
 
@@ -289,10 +328,30 @@ fn main() {
 			}
 		}
 	 	//else: msg from agent
-	 	else if !agents.contains(&src.to_string()) {
-	 		agents.push(src.to_string());	//collecting list of agents in the system
-	 	 }
-	
+	 	else{ 
+			if !agents.contains(&src.to_string()) {
+
+	 			agents.push(src.to_string());	//collecting list of agents in the system
+	 	 	}
+		
+			let socket_request = socket_.try_clone().expect("couldn't clone socket");
+			let mut local_buf = [0;5];
+			for i in 0..5{
+				local_buf[i] = buf[i];
+			}
+			thread::spawn(move ||{
+				let mut data_buf = [0;3];
+				for i in 0..3{
+					data_buf[i] = local_buf[i];
+				}
+				data_buf.reverse();
+				for i in 0..3{
+					local_buf[i] = data_buf[i];
+				}
+				println!("received: {:?}", local_buf);
+				socket_request.send_to(&local_buf, src).expect("couldn't send data");
+			});
+		}	
 		 drop(locked_user);
 
 	 	// println!("agents: {:?}", agents);
