@@ -4,8 +4,8 @@ use std::sync::{Arc, Mutex};
 use tokio::time::timeout; 
 
 fn main() {
-    let received = Arc::new(Mutex::new(5));
-    for i in 0..500 {
+    let received = Arc::new(Mutex::new(0));
+    for i in 0..500{
         let received1 = received.clone();
         thread::spawn(move || {
             let mut local_ctr = 0;
@@ -16,7 +16,17 @@ fn main() {
                 // println!("port: {}",socket.local_addr().unwrap().port());
                 let mut buf = [0;3];
                 // receive timeout in socket
-                socket.recv_from(&mut buf).expect("Didn't receive data");
+                // try and catch
+                match socket.recv_from(&mut buf){
+                    Ok((number_of_bytes, client_address)) => {
+                        //println!("received: {:?}", buf);
+                        local_ctr += 1;
+                    },
+                    Err(e) => {
+                        //println!("error: {:?}", e);
+                    }
+                }
+                //socket.recv_from(&mut buf).expect("Didn't receive data");
                 local_ctr += 1;
             }
             
