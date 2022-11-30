@@ -1,15 +1,53 @@
 use std::thread;
 use std::net::UdpSocket;
+use std::sync::{Arc, Mutex};
+use tokio::time::timeout; 
+
 fn main() {
-    for i in 0..50 {
+    let received = Arc::new(Mutex::new(5));
+    for i in 0..500 {
+        let received1 = received.clone();
         thread::spawn(move || {
-            let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
-            socket.send_to(&[1,2,3], "127.0.0.1:4245").expect("couldn't send data");
-            println!("port: {}",socket.local_addr().unwrap().port());
-            let mut buf = [0;3];
-            socket.recv_from(&mut buf).expect("Didn't receive data");
-            println!("Arr: {:?}", buf);
+            let mut local_ctr = 0;
+            for i in 0..100{
+                let socket = UdpSocket::bind("127.0.0.1:0").expect("couldn't bind to address");
+                //socket.set_read_timeout(Some(std::time::Duration::from_millis(3000))).expect("set_read_timeout call failed");
+                socket.send_to(&[1,2,3], "127.0.0.1:4245").expect("couldn't send data");
+                // println!("port: {}",socket.local_addr().unwrap().port());
+                let mut buf = [0;3];
+                // receive timeout in socket
+                socket.recv_from(&mut buf).expect("Didn't receive data");
+                local_ctr += 1;
+            }
+            
+            let mut locked_user = received1.lock().unwrap();
+            *locked_user += local_ctr;
+            drop(locked_user);
+            // println!("Arr: {:?}", buf);
         });
     }
-    loop {}
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        let locked_user = received.lock().unwrap();
+        println!("Received: {}", *locked_user);
+        drop(locked_user);
+        // println!("Received: {}", received);
+    }
 }
+
+
+
+ // if timeout
+                // catch! 
+                // {
+                //     try{
+                //         socket.recv_from(&mut buf).expect("Didn't receive data");
+                //     }
+                //     catch error: io::Error
+                //     {
+                    
+                //         println!("timeout");
+                //         continue;
+                //     }
+                    
+                // };

@@ -10,7 +10,7 @@ use std::thread::sleep;
 fn get_cpu_util() -> i32{
 	let mut sys = System::new();
     sys.refresh_cpu(); // Refreshing CPU information.
-	let mut avg = 500;
+	let mut avg = 50;
 	let mut count = 0;
 	for cpu in sys.cpus() {
 		avg += cpu.cpu_usage() as i32;
