@@ -19,7 +19,7 @@ fn get_epoch_ms() -> u128 {
 // Holds statistics for each 
 #[derive(Serialize)]
 struct thread_data{
-    sum_response_time: u32,
+    sum_response_time: u128,
     number_of_received_responses: u128,
     number_of_sent_requests: u128,
 }
@@ -65,7 +65,7 @@ fn main()  -> Result<(), Box<dyn Error>>{
                         let end = get_epoch_ms();
                         let response_time = end-start;
                         let mut locked_thread_data_local = thread_data_local2.lock().unwrap();
-                        locked_thread_data_local.sum_response_time += response_time as u32;
+                        locked_thread_data_local.sum_response_time += response_time as u128;
                         locked_thread_data_local.number_of_received_responses += 1;
                         drop(locked_thread_data_local);
                     },
