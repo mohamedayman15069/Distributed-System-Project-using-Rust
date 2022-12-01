@@ -10,3 +10,5 @@ try-catch = "0.2.2"
 tokio     = {version="0.2",features=["full"]}
 csv = "1.1.6"
 serde = {version = "1.0.148", features = ["derive"]}
+timer = "0.2.0"
+chrono="0.4.23"
