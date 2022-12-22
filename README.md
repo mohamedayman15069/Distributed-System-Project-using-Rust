@@ -57,7 +57,7 @@ The response time is calculated as the time interval between the moment the send
 | Average Client in the System (all 1000 threads)|14.45                      | 99.69 |
  
  The plots below show how these metrics varied over time. 
-
+![alt text](https://github.com/mohamedayman15069/Distributed-System-Project-using-Rust/blob/main/Images/1.png)
   
   
   
