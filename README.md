@@ -58,6 +58,26 @@ The response time is calculated as the time interval between the moment the send
  
  The plots below show how these metrics varied over time. 
 ![alt text](https://github.com/mohamedayman15069/Distributed-System-Project-using-Rust/blob/main/Images/1.png)
+![alt text](https://github.com/mohamedayman15069/Distributed-System-Project-using-Rust/blob/main/Images/2.png)
+![alt text](https://github.com/mohamedayman15069/Distributed-System-Project-using-Rust/blob/main/Images/3.png)
+
+### Agent-Side 
+  
+|                  | Server 1 | Server2 | Server 3|
+|------------------|----------|---------| -----:|
+| Agent 1          | 0.332    |0.341    | 0.326 |
+| Agent            | 0.334    |0.342    | 0.324 |
+| Average of agents| 0.333    |0.342    | 0.325 |
+  
+  The plot below shows the number of requests sent to each server by both agents over time.
+![alt text](https://github.com/mohamedayman15069/Distributed-System-Project-using-Rust/blob/main/Images/4.png)
+  
+### Server-Side
+Even though the load balancer has distributed the load fairly over the servers, packets may be lost in the network for many reasons. Therefore, below we show the actual load on each of the servers.
+
+  |             Ratio of Requests Received by Each Server             | 
+  | Server 1 | server 2 | server 3|
+  |0.322     | 0.341    | 0.326   |
   
   
-  
+![alt text](https://github.com/mohamedayman15069/Distributed-System-Project-using-Rust/blob/main/Images/5.png)
