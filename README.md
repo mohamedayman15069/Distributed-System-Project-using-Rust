@@ -55,4 +55,9 @@ The response time is calculated as the time interval between the moment the send
 | Client 1 (500 threads)                         | 14.74                     | 99.68 |
 | Client 2 (500 threads)                         | 14.18                     | 99.70 |
 | Average Client in the System (all 1000 threads)|14.45                      | 99.69 |
+ 
+ The plots below show how these metrics varied over time. 
+
+  
+  
   
