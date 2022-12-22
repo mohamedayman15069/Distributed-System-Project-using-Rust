@@ -28,7 +28,7 @@ The child process has a thread that receives the replies from the servers and pl
 
 ### Servers
 
-####Network Topology
+#### Network Topology
 
 As mentioned above, our system has 3 servers. We have designed our servers to have a ring topology, where each server knows the addresses of the servers on its “right” and “left” sides. The main advantage of using a ring topology is that there is no need to store global information about all the servers in the network, which is efficient in terms of memory usage. This global information could be saved in every server in the network, which creates a huge storage overhead, especially in large networks. Also, this can cause inconsistency issues, in regards to updating the global tables in all the servers. To avoid the issues of inconsistency, this data could be stored in a centralized control unit, however, this creates a single point of failure for the system.Taking into account the aforementioned limitations, we chose to implement the ring topology for the servers. 
 Server Implementation
@@ -41,3 +41,18 @@ For every election message received, the server updates the ELECTION array. The 
 The election process ends when one of the servers receives election messages from both neighbors that are nominating the same server. This means that all servers have agreed on who should be elected next. When this happens, the server sends an election result message to its neighbors. This message has the format “r, <addr>, <val>”, where “r” indicates that this is an election result message, <addr> is the address of the elected server and <val> is the value of the server when it was elected. 
 When the election is done, each server checks if they are the one that was elected, and if that is the case, they go down for 15 seconds. When a server goes down, it sends a message to all the agents in its local array and to its 2 neighboring servers that it is going down. This message is just one byte “d”. This is one of the points where the agents update their arrays of the currently active servers. Within these 15 seconds of down time, the server does not respond to any messages. When the down time is done, the server generates a new random value for the next election round and informs the agents and its 2 neighbors that it is back up. This message is “u”. The agents, again, update their arrays of currently active servers. 
 Since the periodic timers in the servers are all local, they are not synchronized. Therefore, to avoid having overlapping elections, before a server can start a new election, it must check its local list of active servers to make sure that the previously elected server is now back up.
+
+  ## Results 
+  
+The results below are based on data collected every 10 seconds for around 5 hours and 40 minutes. So, there are 2058 data points for each metric. The data collected at each point is an accumulation of all previous data.
+  
+### Client-Side
+  
+The response time is calculated as the time interval between the moment the sender first sends the request, until a response is received. The average response time is the sum of the response times divided by the number of responses received. The success rate is the number of responses received divided by the number of requests sent. 
+
+|                                                | Average Response Time (ms)| Success Rate (%)  |
+|-----------------------                         |---------------------------| -----:|
+| Client 1 (500 threads)                         | 14.74                     | 99.68 |
+| Client 2 (500 threads)                         | 14.18                     | 99.70 |
+| Average Client in the System (all 1000 threads)|14.45                      | 99.69 |
+  
