@@ -78,6 +78,7 @@ Even though the load balancer has distributed the load fairly over the servers, 
   |             Ratio of Requests Received by Each Server             | 
   |-------------------------------------------------------------------|
   | Server 1 | server 2 | server 3|
+  |----------|----------|---------|
   |0.322     | 0.341    | 0.326   |
   
   
