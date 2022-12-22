@@ -76,6 +76,7 @@ The response time is calculated as the time interval between the moment the send
 Even though the load balancer has distributed the load fairly over the servers, packets may be lost in the network for many reasons. Therefore, below we show the actual load on each of the servers.
 
   |             Ratio of Requests Received by Each Server             | 
+  |-------------------------------------------------------------------|
   | Server 1 | server 2 | server 3|
   |0.322     | 0.341    | 0.326   |
   
